@@ -1,12 +1,12 @@
 const zlib = require("zlib");
 const fs = require("fs");
-const { totalmem } = require("os");
 const axios = require("axios").default;
 const key = [0x40, 0x47, 0x61, 0x77, 0x5E, 0x32, 0x74, 0x47, 0x51, 0x36, 0x31, 0x2D, 0xCE, 0xD2, 0x6E, 0x69];
 const round = Math.round;
 var candidates = [];
 var inputHandler = inputMusicURL;
 process.stdin.on("data", buffer => inputHandler(String(buffer)));
+console.log("请输入歌曲链接");
 
 function inputMusicURL(input) {
     var hash = input.match(/kugou.+hash=([0-9A-F]{32})/);
@@ -29,26 +29,35 @@ function inputMusicURL(input) {
 function selectLyric(input) {
     var num = input.match(/(\d)/);
     if (num && num[1] < candidates.length) {
+        //获取歌词数据
         var item = candidates[Number(num[1])];
         axios.get(`http://lyrics.kugou.com/download?ver=1&client=pc&id=${item.id}&accesskey=${item.accesskey}&fmt=krc&charset=utf8`).then(res => {
+            //解码歌词数据
             var data = Buffer.from(res.data.content, "base64").slice(4);
             for (var i = 0; i < data.length; i++) {
                 data[i] ^= key[i % 16];
             }
-            var decom = String(zlib.unzipSync(data)).split("\r\n");
+            //歌词按行分割
+            var lines = String(zlib.unzipSync(data)).split("\r\n");
             var result = "";
-            decom.forEach(line => {
+            lines.forEach(line => {
+                //转换歌词行
                 var lineTime = line.match(/\[(\d+),(\d+)\]/);
                 if (lineTime) {
                     var regsyl = /<(\d+),(\d+),0>([^<]+)/g;
                     var syl;
-                    result += `Dialogue: 0,${toTime(Number(lineTime[1]))},${toTime(Number(lineTime[1]) + Number(lineTime[2]))},Default,,0,0,0,,`;
+                    //计算行开始结束时间
+                    var tStart = Number(lineTime[1]);
+                    var tEnd = tStart + Number(lineTime[2]);
+                    //写入ass字幕
+                    result += `Dialogue: 0,${toTime(tStart)},${toTime(tEnd)},Default,,0,0,0,,`;
                     while (syl = regsyl.exec(line)) {
                         result += `${syl[3]}{\\k${round(syl[2] / 10)}}`;
                     }
                     result += "\n";
                 }
             });
+            //输出ass字幕
             console.log(result);
         });
         inputHandler = inputMusicURL;
@@ -57,6 +66,7 @@ function selectLyric(input) {
     }
 }
 
+//格式化毫秒时间
 function toTime(ms) {
     var d = String((ms / 10 % 100) << 0);
     var s = String((ms / 1000 % 60) << 0);
