@@ -1,7 +1,9 @@
 const zlib = require("zlib");
 const fs = require("fs");
+const { totalmem } = require("os");
 const axios = require("axios").default;
 const key = [0x40, 0x47, 0x61, 0x77, 0x5E, 0x32, 0x74, 0x47, 0x51, 0x36, 0x31, 0x2D, 0xCE, 0xD2, 0x6E, 0x69];
+const round = Math.round;
 var candidates = [];
 var inputHandler = inputMusicURL;
 process.stdin.on("data", buffer => inputHandler(String(buffer)));
@@ -33,11 +35,34 @@ function selectLyric(input) {
             for (var i = 0; i < data.length; i++) {
                 data[i] ^= key[i % 16];
             }
-            var decom = zlib.unzipSync(data);
-            console.log(String(decom));
+            var decom = String(zlib.unzipSync(data)).split("\r\n");
+            var result = "";
+            decom.forEach(line => {
+                var lineTime = line.match(/\[(\d+),(\d+)\]/);
+                if (lineTime) {
+                    var regsyl = /<(\d+),(\d+),0>([^<]+)/g;
+                    var syl;
+                    result += `Dialogue: 0,${toTime(Number(lineTime[1]))},${toTime(Number(lineTime[1]) + Number(lineTime[2]))},Default,,0,0,0,,`;
+                    while (syl = regsyl.exec(line)) {
+                        result += `${syl[3]}{\\k${round(syl[2] / 10)}}`;
+                    }
+                    result += "\n";
+                }
+            });
+            console.log(result);
         });
         inputHandler = inputMusicURL;
     } else {
         console.log("请输入正确的数字");
     }
+}
+
+function toTime(ms) {
+    var d = String((ms / 10 % 100) << 0);
+    var s = String((ms / 1000 % 60) << 0);
+    var m = String((ms / 60000) << 0);
+    if (d.length < 2) d = "0" + d;
+    if (s.length < 2) s = "0" + s;
+    if (m.length < 2) m = "0" + m;
+    return m + ":" + s + "." + d
 }
