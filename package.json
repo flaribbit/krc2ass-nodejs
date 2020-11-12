@@ -1,7 +1,6 @@
 {
   "name": "krc2ass-nodejs",
   "version": "1.0.0",
-  "description": "",
   "main": "main.js",
   "scripts": {
     "test": "node main.js"
@@ -10,5 +9,19 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.21.0"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flaribbit/krc2ass-nodejs.git"
+  },
+  "keywords": [
+    "krc",
+    "ass"
+  ],
+  "bugs": {
+    "url": "https://github.com/flaribbit/krc2ass-nodejs/issues"
+  },
+  "homepage": "https://github.com/flaribbit/krc2ass-nodejs#readme",
+  "description": ""
 }

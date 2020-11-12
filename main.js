@@ -1,4 +1,7 @@
+const zlib = require("zlib");
+const fs = require("fs");
 const axios = require("axios").default;
+const key = [0x40, 0x47, 0x61, 0x77, 0x5E, 0x32, 0x74, 0x47, 0x51, 0x36, 0x31, 0x2D, 0xCE, 0xD2, 0x6E, 0x69];
 var candidates = [];
 var inputHandler = inputMusicURL;
 process.stdin.on("data", buffer => inputHandler(String(buffer)));
@@ -26,7 +29,12 @@ function selectLyric(input) {
     if (num && num[1] < candidates.length) {
         var item = candidates[Number(num[1])];
         axios.get(`http://lyrics.kugou.com/download?ver=1&client=pc&id=${item.id}&accesskey=${item.accesskey}&fmt=krc&charset=utf8`).then(res => {
-            console.log(res.data);
+            var data = Buffer.from(res.data.content, "base64").slice(4);
+            for (var i = 0; i < data.length; i++) {
+                data[i] ^= key[i % 16];
+            }
+            var decom = zlib.unzipSync(data);
+            console.log(String(decom));
         });
         inputHandler = inputMusicURL;
     } else {
